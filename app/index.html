@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>To-Do List</h1>
+        <form id="add-task-form">
+            <input type="text" id="task-input" placeholder="Enter task" required>
+            <button type="submit">Add Task</button>
+        </form>
+
+        <ul id="task-list">
+            {% for task in tasks %}
+                <li id="task-{{ task.id }}" class="{{ 'completed' if task.completed else '' }}">
+                    <span>{{ task.name }}</span>
+                    <button class="toggle" onclick="toggleTask({{ task.id }})">Toggle</button>
+                    <button class="delete" onclick="deleteTask({{ task.id }})">Delete</button>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <script>
+        document.getElementById('add-task-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const taskInput = document.getElementById('task-input');
+            const task = taskInput.value.trim();
+            if (task) {
+                fetch('/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ 'task': task })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    taskInput.value = '';
+                    renderTasks(data);
+                });
+            }
+        });
+
+        function renderTasks(tasks) {
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = '';
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.id = `task-${task.id}`;
+                li.classList.toggle('completed', task.completed);
+                li.innerHTML = `
+                    <span>${task.name}</span>
+                    <button class="toggle" onclick="toggleTask(${task.id})">Toggle</button>
+                    <button class="delete" onclick="deleteTask(${task.id})">Delete</button>
+                `;
+                taskList.appendChild(li);
+            });
+        }
+
+        function toggleTask(taskId) {
+            fetch(`/update/${taskId}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => renderTasks(data));
+        }
+
+        function deleteTask(taskId) {
+            fetch(`/delete/${taskId}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => renderTasks(data));
+        }
+    </script>
+</body>
+</html>
