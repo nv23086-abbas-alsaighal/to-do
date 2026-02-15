@@ -23,6 +23,19 @@ def load_tasks():
             tasks = json.load(f)
     except FileNotFoundError:
         tasks = []
+    # ensure backward compatibility and fill defaults
+    normalized = []
+    for t in tasks:
+        if 'description' not in t:
+            t['description'] = ''
+        if 'priority' not in t:
+            t['priority'] = 0
+        if 'due_date' not in t:
+            t['due_date'] = None
+        if 'created_at' not in t:
+            t['created_at'] = t.get('id', 0)
+        normalized.append(t)
+    tasks = normalized
     return tasks
 
 
@@ -39,7 +52,30 @@ def index():
 
 @app.route('/api/tasks', methods=['GET'])
 def api_get_tasks():
-    return jsonify(load_tasks())
+    tasks = load_tasks()
+    # basic query/filter support
+    q = request.args.get('q')
+    status = request.args.get('status')
+    priority = request.args.get('priority')
+    sort = request.args.get('sort')
+    if q:
+        ql = q.lower()
+        tasks = [t for t in tasks if ql in t.get('name','').lower() or ql in t.get('description','').lower()]
+    if status == 'completed':
+        tasks = [t for t in tasks if t.get('completed')]
+    elif status == 'pending':
+        tasks = [t for t in tasks if not t.get('completed')]
+    if priority is not None:
+        try:
+            p = int(priority)
+            tasks = [t for t in tasks if int(t.get('priority',0)) == p]
+        except Exception:
+            pass
+    if sort == 'due':
+        tasks = sorted(tasks, key=lambda x: x.get('due_date') or '')
+    elif sort == 'created':
+        tasks = sorted(tasks, key=lambda x: x.get('created_at') or 0)
+    return jsonify(tasks)
 
 
 @app.route('/api/tasks', methods=['POST'])
