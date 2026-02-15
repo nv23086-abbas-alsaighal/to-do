@@ -106,6 +106,15 @@ def api_toggle_task(task_id):
     return jsonify(tasks)
 
 
+@app.route('/api/tasks/stats', methods=['GET'])
+def api_task_stats():
+    tasks = load_tasks()
+    total = len(tasks)
+    completed = len([t for t in tasks if t.get('completed')])
+    overdue = len([t for t in tasks if t.get('due_date') and t.get('due_date') < str(__import__('datetime').date.today()) and not t.get('completed')])
+    return jsonify({'total': total, 'completed': completed, 'overdue': overdue})
+
+
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
 def api_delete_task(task_id):
     tasks = load_tasks()
