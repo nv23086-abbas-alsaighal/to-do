@@ -82,11 +82,14 @@ def api_get_tasks():
 def api_add_task():
     data = request.get_json() or request.form
     name = data.get('name') or data.get('task')
+    description = data.get('description', '')
+    priority = int(data.get('priority') or 0)
+    due_date = data.get('due_date') or None
     if not name:
         return jsonify({'error': 'Missing task name'}), 400
     tasks = load_tasks()
     next_id = max([t['id'] for t in tasks], default=0) + 1
-    task = {'id': next_id, 'name': name, 'completed': False}
+    task = {'id': next_id, 'name': name, 'description': description, 'priority': priority, 'due_date': due_date, 'completed': False, 'created_at': next_id}
     tasks.append(task)
     save_tasks(tasks)
     return jsonify(tasks)
