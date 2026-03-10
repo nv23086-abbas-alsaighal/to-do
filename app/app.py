@@ -115,6 +115,30 @@ def api_task_stats():
     return jsonify({'total': total, 'completed': completed, 'overdue': overdue})
 
 
+@app.route('/api/tasks/<int:task_id>', methods=['PUT', 'PATCH'])
+def api_update_task(task_id):
+    data = request.get_json() or request.form
+    tasks = load_tasks()
+
+    for task in tasks:
+        if task['id'] == task_id:
+            if 'name' in data or 'task' in data:
+                task['name'] = data.get('name') or data.get('task')
+            if 'description' in data:
+                task['description'] = data.get('description')
+            if 'priority' in data:
+                task['priority'] = int(data.get('priority') or 0)
+            if 'due_date' in data:
+                task['due_date'] = data.get('due_date') or None
+            if 'completed' in data:
+                task['completed'] = bool(data.get('completed'))
+
+            save_tasks(tasks)
+            return jsonify(task), 200
+
+    return jsonify({'error': 'Task not found'}), 404
+
+
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
 def api_delete_task(task_id):
     tasks = load_tasks()

@@ -9,7 +9,6 @@ import app as app_module
 
 def test_app_import():
     assert app_module.app is not None
-    assert False, "Intentional temporary failure for CI failed-run screenshot"
 
 
 def test_app_responds():
