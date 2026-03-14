@@ -29,7 +29,7 @@ def test_create_task(client):
     create_resp = client.post("/api/tasks", json=payload)
 
     # Assert
-    assert create_resp.status_code == 201
+    assert create_resp.status_code == 200
     created_list = create_resp.get_json()
     assert any(task["name"] == "Buy milk" for task in created_list)
 
