@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template
 import json
 import os
 import re
+from html import escape
 
 # Import version: when running as a script the package name may not be available,
 # so try both package and local imports and fall back to a default.
@@ -59,6 +60,8 @@ def load_tasks():
             t['tags'] = []
         else:
             t['tags'] = normalize_tags(t.get('tags'))
+        if 'comments' not in t:
+            t['comments'] = []
         normalized.append(t)
     tasks = normalized
     return tasks
@@ -121,7 +124,7 @@ def api_add_task():
         return jsonify({'error': 'Missing task name'}), 400
     tasks = load_tasks()
     next_id = max([t['id'] for t in tasks], default=0) + 1
-    task = {'id': next_id, 'name': name, 'description': description, 'priority': priority, 'due_date': due_date, 'completed': False, 'created_at': next_id, 'tags': tags}
+    task = {'id': next_id, 'name': name, 'description': description, 'priority': priority, 'due_date': due_date, 'completed': False, 'created_at': next_id, 'tags': tags, 'comments': []}
     tasks.append(task)
     save_tasks(tasks)
     return jsonify(tasks)
@@ -222,6 +225,48 @@ def api_remove_tag(task_id, tag_name):
             task['tags'] = [tag for tag in normalize_tags(task.get('tags', [])) if tag != target]
             save_tasks(tasks)
             return jsonify(task)
+
+    return jsonify({'error': 'Task not found'}), 404
+
+
+@app.route('/api/tasks/<int:task_id>/comments', methods=['GET', 'POST'])
+def api_task_comments(task_id):
+    tasks = load_tasks()
+    for task in tasks:
+        if task['id'] == task_id:
+            if request.method == 'GET':
+                return jsonify(task.get('comments', []))
+
+            data = request.get_json() or request.form
+            body_raw = str(data.get('body') or '').strip()
+            if not body_raw:
+                return jsonify({'error': 'Comment body is required'}), 400
+            if len(body_raw) > 500:
+                return jsonify({'error': 'Comment body must be 500 characters or less'}), 400
+
+            comments = task.get('comments', [])
+            next_comment_id = max([c.get('id', 0) for c in comments], default=0) + 1
+            comment = {'id': next_comment_id, 'body': escape(body_raw)}
+            comments.append(comment)
+            task['comments'] = comments
+            save_tasks(tasks)
+            return jsonify(comment), 201
+
+    return jsonify({'error': 'Task not found'}), 404
+
+
+@app.route('/api/tasks/<int:task_id>/comments/<int:comment_id>', methods=['DELETE'])
+def api_delete_comment(task_id, comment_id):
+    tasks = load_tasks()
+    for task in tasks:
+        if task['id'] == task_id:
+            comments = task.get('comments', [])
+            new_comments = [comment for comment in comments if comment.get('id') != comment_id]
+            if len(comments) == len(new_comments):
+                return jsonify({'error': 'Comment not found'}), 404
+            task['comments'] = new_comments
+            save_tasks(tasks)
+            return jsonify(task.get('comments', []))
 
     return jsonify({'error': 'Task not found'}), 404
 

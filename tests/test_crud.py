@@ -99,3 +99,26 @@ def test_tags_assign_filter_and_remove(client):
     remove_tag_resp = client.delete(f"/api/tasks/{task_id}/tags/work")
     assert remove_tag_resp.status_code == 200
     assert "work" not in remove_tag_resp.get_json()["tags"]
+
+
+def test_comments_crud_and_sanitization(client):
+    create_resp = client.post("/api/tasks", json={"name": "Task with comments"})
+    task_id = create_resp.get_json()[-1]["id"]
+
+    add_comment_resp = client.post(
+        f"/api/tasks/{task_id}/comments",
+        json={"body": "<script>alert('x')</script> nice"},
+    )
+    assert add_comment_resp.status_code == 201
+    comment = add_comment_resp.get_json()
+    assert "<script>" not in comment["body"]
+
+    list_comments_resp = client.get(f"/api/tasks/{task_id}/comments")
+    assert list_comments_resp.status_code == 200
+    comments = list_comments_resp.get_json()
+    assert len(comments) == 1
+    assert comments[0]["id"] == comment["id"]
+
+    delete_comment_resp = client.delete(f"/api/tasks/{task_id}/comments/{comment['id']}")
+    assert delete_comment_resp.status_code == 200
+    assert delete_comment_resp.get_json() == []
