@@ -120,6 +120,11 @@
                         </div>
                         <p>No tasks yet. Create one to get started!</p>
                     </div>
+                    <div class="flow-pagination" id="pagination-controls" style="display:none;">
+                        <button id="prev-page" class="flow-btn-icon" type="button" title="Previous page">&#8592;</button>
+                        <span id="page-label" class="flow-page-label">Page 1 of 1</span>
+                        <button id="next-page" class="flow-btn-icon" type="button" title="Next page">&#8594;</button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -166,13 +171,50 @@
             const filterSelect = document.getElementById('filter-select');
             const tagFilterSelect = document.getElementById('tag-filter-select');
             const sortSelect = document.getElementById('sort-select');
+            const prevPageBtn = document.getElementById('prev-page');
+            const nextPageBtn = document.getElementById('next-page');
+            const pageLabel = document.getElementById('page-label');
+            const paginationControls = document.getElementById('pagination-controls');
 
-            function renderTasks(tasks) {
+            const state = {
+                page: 1,
+                pages: 1,
+                perPage: 8
+            };
+
+            function normalizeListResponse(data) {
+                if (Array.isArray(data)) {
+                    return {
+                        items: data,
+                        page: 1,
+                        pages: 1,
+                        per_page: data.length,
+                        total: data.length
+                    };
+                }
+
+                return {
+                    items: data.items || [],
+                    page: data.page || 1,
+                    pages: data.pages || 1,
+                    per_page: data.per_page || (data.items || []).length,
+                    total: data.total || (data.items || []).length
+                };
+            }
+
+            function renderTasks(response) {
+                const data = normalizeListResponse(response);
+                const tasks = data.items;
+                state.page = data.page;
+                state.pages = data.pages;
+
                 taskList.innerHTML = '';
                 if (tasks.length === 0) {
                     emptyState.style.display = 'block';
+                    paginationControls.style.display = 'none';
                 } else {
                     emptyState.style.display = 'none';
+                    paginationControls.style.display = state.pages > 1 ? 'flex' : 'none';
                     tasks.forEach(t => {
                         const li = document.createElement('li');
                         li.className = 'flow-task-item';
@@ -227,6 +269,10 @@
                         taskList.appendChild(li);
                     });
                 }
+
+                pageLabel.textContent = `Page ${state.page} of ${state.pages}`;
+                prevPageBtn.disabled = state.page <= 1;
+                nextPageBtn.disabled = state.page >= state.pages;
             }
 
             function escapeHtml(str){ return str.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
@@ -298,6 +344,18 @@
             };
 
             clearBtn.addEventListener('click', () => { api.clearCompleted().then(() => loadAndRender()); });
+            prevPageBtn.addEventListener('click', () => {
+                if (state.page > 1) {
+                    state.page -= 1;
+                    loadAndRender();
+                }
+            });
+            nextPageBtn.addEventListener('click', () => {
+                if (state.page < state.pages) {
+                    state.page += 1;
+                    loadAndRender();
+                }
+            });
 
             // Command palette (cmdr)
             const cmdrModal = new bootstrap.Modal(document.getElementById('cmdrModal'));
@@ -319,7 +377,8 @@
             }
 
             async function populateCmdr(){
-                const tasks = await api.list();
+                const result = normalizeListResponse(await api.list());
+                const tasks = result.items;
                 const commands = [
                     { id: 'add_focus', title: 'Focus add input' },
                     { id: 'clear_completed', title: 'Clear completed tasks' }
@@ -362,13 +421,20 @@
                 if (filterSelect.value) params.set('status', filterSelect.value);
                 if (tagFilterSelect.value) params.set('tag', tagFilterSelect.value);
                 if (sortSelect.value) params.set('sort', sortSelect.value);
+                params.set('page', String(state.page));
+                params.set('per_page', String(state.perPage));
                 api.list(params.toString()).then(renderTasks);
             }
 
-            searchInput.addEventListener('input', () => loadAndRender());
-            filterSelect.addEventListener('change', () => loadAndRender());
-            tagFilterSelect.addEventListener('change', () => loadAndRender());
-            sortSelect.addEventListener('change', () => loadAndRender());
+            function resetPageAndLoad(){
+                state.page = 1;
+                loadAndRender();
+            }
+
+            searchInput.addEventListener('input', () => resetPageAndLoad());
+            filterSelect.addEventListener('change', () => resetPageAndLoad());
+            tagFilterSelect.addEventListener('change', () => resetPageAndLoad());
+            sortSelect.addEventListener('change', () => resetPageAndLoad());
 
             // initial load
             refreshTagsFilter();

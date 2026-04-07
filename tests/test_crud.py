@@ -122,3 +122,19 @@ def test_comments_crud_and_sanitization(client):
     delete_comment_resp = client.delete(f"/api/tasks/{task_id}/comments/{comment['id']}")
     assert delete_comment_resp.status_code == 200
     assert delete_comment_resp.get_json() == []
+
+
+def test_paginated_list_response(client):
+    for idx in range(6):
+        client.post("/api/tasks", json={"name": f"Task {idx}"})
+
+    page_resp = client.get("/api/tasks?page=2&per_page=2")
+    assert page_resp.status_code == 200
+
+    data = page_resp.get_json()
+    assert set(data.keys()) == {"items", "page", "per_page", "total", "pages"}
+    assert data["page"] == 2
+    assert data["per_page"] == 2
+    assert data["total"] == 6
+    assert data["pages"] == 3
+    assert len(data["items"]) == 2
