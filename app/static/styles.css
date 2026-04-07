@@ -582,6 +582,75 @@ html, body {
     transform: scale(0.95);
 }
 
+.flow-tags-row {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.flow-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    background: rgba(6, 182, 212, 0.12);
+}
+
+.flow-tag-remove {
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1;
+    padding: 0;
+}
+
+.flow-tag-input-row {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 0.4rem;
+}
+
+.flow-inline-input {
+    flex: 1;
+    min-width: 130px;
+    padding: 0.45rem 0.65rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    background: rgba(51, 65, 85, 0.35);
+    color: var(--text-primary);
+    font-size: 0.82rem;
+}
+
+.flow-inline-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.flow-inline-btn {
+    border: 1px solid var(--border-accent);
+    background: rgba(6, 182, 212, 0.18);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 0.4rem 0.65rem;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.flow-inline-btn:hover {
+    background: rgba(6, 182, 212, 0.26);
+}
+
 /* Empty State */
 .flow-empty {
     text-align: center;

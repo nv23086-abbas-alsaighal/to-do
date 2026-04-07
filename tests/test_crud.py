@@ -80,3 +80,22 @@ def test_delete_task(client):
     assert read_resp.status_code == 200
     names = [task["name"] for task in read_resp.get_json()]
     assert "To be deleted" not in names
+
+
+def test_tags_assign_filter_and_remove(client):
+    create_resp = client.post("/api/tasks", json={"name": "Tagged task"})
+    task_id = create_resp.get_json()[-1]["id"]
+
+    add_tag_resp = client.post(f"/api/tasks/{task_id}/tags", json={"tag": "Work"})
+    assert add_tag_resp.status_code == 200
+    assert "work" in add_tag_resp.get_json()["tags"]
+
+    filtered_resp = client.get("/api/tasks?tag=work")
+    assert filtered_resp.status_code == 200
+    filtered = filtered_resp.get_json()
+    assert len(filtered) == 1
+    assert filtered[0]["id"] == task_id
+
+    remove_tag_resp = client.delete(f"/api/tasks/{task_id}/tags/work")
+    assert remove_tag_resp.status_code == 200
+    assert "work" not in remove_tag_resp.get_json()["tags"]
