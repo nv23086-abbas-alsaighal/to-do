@@ -67,6 +67,9 @@
                                 <option value="completed">Completed</option>
                                 <option value="pending">Pending</option>
                             </select>
+                            <select id="tag-filter-select" class="flow-filter-select">
+                                <option value="">All Tags</option>
+                            </select>
                             <select id="sort-select" class="flow-filter-select">
                                 <option value="">Sort By</option>
                                 <option value="due">Due Date</option>
@@ -138,7 +141,14 @@
                 add: (payload) => fetch('/api/tasks', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r => r.json()),
                 toggle: (id) => fetch(`/api/tasks/${id}/toggle`, { method: 'POST' }).then(r => r.json()),
                 delete: (id) => fetch(`/api/tasks/${id}`, { method: 'DELETE' }).then(r => r.json()),
-                clearCompleted: () => fetch('/api/tasks/clear_completed', { method: 'POST' }).then(r => r.json())
+                clearCompleted: () => fetch('/api/tasks/clear_completed', { method: 'POST' }).then(r => r.json()),
+                tags: () => fetch('/api/tags').then(r => r.json()),
+                addTag: (id, tag) => fetch(`/api/tasks/${id}/tags`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ tag })
+                }).then(r => r.json()),
+                removeTag: (id, tag) => fetch(`/api/tasks/${id}/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' }).then(r => r.json())
             };
 
             const taskInput = document.getElementById('task-input');
@@ -148,6 +158,7 @@
             const emptyState = document.getElementById('empty-state');
             const searchInput = document.getElementById('search-input');
             const filterSelect = document.getElementById('filter-select');
+            const tagFilterSelect = document.getElementById('tag-filter-select');
             const sortSelect = document.getElementById('sort-select');
 
             function renderTasks(tasks) {
@@ -161,6 +172,12 @@
                         li.className = 'flow-task-item';
                         if (t.completed) li.classList.add('completed');
                         li.id = `task-${t.id}`;
+                        const tagsHtml = (t.tags || []).map(tag => `
+                            <span class="flow-tag-chip">
+                                ${escapeHtml(tag)}
+                                <button type="button" class="flow-tag-remove" onclick="removeTag(${t.id}, '${encodeURIComponent(tag)}')">&times;</button>
+                            </span>
+                        `).join('');
                         li.innerHTML = `
                             <div class="flow-task-check">
                                 <input type="checkbox" class="flow-checkbox" onchange="toggleTask(${t.id})" ${t.completed ? 'checked' : ''}>
@@ -169,6 +186,13 @@
                                 <div class="flow-task-title">${escapeHtml(t.name)}</div>
                                 ${t.description ? `<div class="flow-task-desc">${escapeHtml(t.description)}</div>` : ''}
                                 ${t.priority && t.priority > 0 ? `<span class="flow-priority priority-${t.priority}">${t.priority === 1 ? 'Low' : t.priority === 2 ? 'Medium' : 'High'}</span>` : ''}
+                                <div class="flow-tags-row">
+                                    ${tagsHtml}
+                                    <div class="flow-tag-input-row">
+                                        <input id="tag-input-${t.id}" class="flow-inline-input" placeholder="Add tag">
+                                        <button type="button" class="flow-inline-btn" onclick="addTag(${t.id})">Tag</button>
+                                    </div>
+                                </div>
                             </div>
                             <div class="flow-task-actions">
                                 <button class="flow-btn-icon" onclick="deleteTask(${t.id})" title="Delete">
@@ -188,6 +212,20 @@
 
             function escapeHtml(str){ return str.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
 
+            function refreshTagsFilter() {
+                api.tags().then(tags => {
+                    const currentValue = tagFilterSelect.value;
+                    tagFilterSelect.innerHTML = '<option value="">All Tags</option>';
+                    tags.forEach(tag => {
+                        const option = document.createElement('option');
+                        option.value = tag;
+                        option.textContent = tag;
+                        tagFilterSelect.appendChild(option);
+                    });
+                    tagFilterSelect.value = currentValue;
+                });
+            }
+
             addBtn.addEventListener('click', () => {
                 const name = taskInput.value.trim();
                 const description = document.getElementById('task-desc').value.trim();
@@ -205,6 +243,24 @@
 
             window.toggleTask = (id) => { api.toggle(id).then(() => loadAndRender()); };
             window.deleteTask = (id) => { api.delete(id).then(() => loadAndRender()); };
+            window.addTag = (id) => {
+                const input = document.getElementById(`tag-input-${id}`);
+                const tag = input.value.trim();
+                if (!tag) return;
+                api.addTag(id, tag).then(() => {
+                    input.value = '';
+                    refreshTagsFilter();
+                    loadAndRender();
+                });
+            };
+
+            window.removeTag = (id, encodedTag) => {
+                const tag = decodeURIComponent(encodedTag);
+                api.removeTag(id, tag).then(() => {
+                    refreshTagsFilter();
+                    loadAndRender();
+                });
+            };
 
             clearBtn.addEventListener('click', () => { api.clearCompleted().then(() => loadAndRender()); });
 
@@ -269,15 +325,18 @@
                 const params = new URLSearchParams();
                 if (searchInput.value) params.set('q', searchInput.value);
                 if (filterSelect.value) params.set('status', filterSelect.value);
+                if (tagFilterSelect.value) params.set('tag', tagFilterSelect.value);
                 if (sortSelect.value) params.set('sort', sortSelect.value);
                 api.list(params.toString()).then(renderTasks);
             }
 
             searchInput.addEventListener('input', () => loadAndRender());
             filterSelect.addEventListener('change', () => loadAndRender());
+            tagFilterSelect.addEventListener('change', () => loadAndRender());
             sortSelect.addEventListener('change', () => loadAndRender());
 
             // initial load
+            refreshTagsFilter();
             loadAndRender();
         </script>
     </body>
