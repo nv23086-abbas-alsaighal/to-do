@@ -148,7 +148,13 @@
                     headers: {'Content-Type':'application/json'},
                     body: JSON.stringify({ tag })
                 }).then(r => r.json()),
-                removeTag: (id, tag) => fetch(`/api/tasks/${id}/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' }).then(r => r.json())
+                removeTag: (id, tag) => fetch(`/api/tasks/${id}/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' }).then(r => r.json()),
+                addComment: (id, body) => fetch(`/api/tasks/${id}/comments`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ body })
+                }).then(r => r.json()),
+                deleteComment: (id, commentId) => fetch(`/api/tasks/${id}/comments/${commentId}`, { method: 'DELETE' }).then(r => r.json())
             };
 
             const taskInput = document.getElementById('task-input');
@@ -178,6 +184,12 @@
                                 <button type="button" class="flow-tag-remove" onclick="removeTag(${t.id}, '${encodeURIComponent(tag)}')">&times;</button>
                             </span>
                         `).join('');
+                        const commentsHtml = (t.comments || []).map(comment => `
+                            <div class="flow-comment-item">
+                                <span>${escapeHtml(comment.body || '')}</span>
+                                <button type="button" class="flow-comment-delete" onclick="deleteComment(${t.id}, ${comment.id})">Delete</button>
+                            </div>
+                        `).join('');
                         li.innerHTML = `
                             <div class="flow-task-check">
                                 <input type="checkbox" class="flow-checkbox" onchange="toggleTask(${t.id})" ${t.completed ? 'checked' : ''}>
@@ -191,6 +203,13 @@
                                     <div class="flow-tag-input-row">
                                         <input id="tag-input-${t.id}" class="flow-inline-input" placeholder="Add tag">
                                         <button type="button" class="flow-inline-btn" onclick="addTag(${t.id})">Tag</button>
+                                    </div>
+                                </div>
+                                <div class="flow-comments-row">
+                                    <div class="flow-comments-list">${commentsHtml}</div>
+                                    <div class="flow-comment-input-row">
+                                        <input id="comment-input-${t.id}" class="flow-inline-input" maxlength="500" placeholder="Write a comment">
+                                        <button type="button" class="flow-inline-btn" onclick="addComment(${t.id})">Comment</button>
                                     </div>
                                 </div>
                             </div>
@@ -260,6 +279,22 @@
                     refreshTagsFilter();
                     loadAndRender();
                 });
+            };
+
+            window.addComment = (id) => {
+                const input = document.getElementById(`comment-input-${id}`);
+                const body = input.value.trim();
+                if (!body) return;
+                api.addComment(id, body).then((result) => {
+                    if (!result.error) {
+                        input.value = '';
+                        loadAndRender();
+                    }
+                });
+            };
+
+            window.deleteComment = (id, commentId) => {
+                api.deleteComment(id, commentId).then(() => loadAndRender());
             };
 
             clearBtn.addEventListener('click', () => { api.clearCompleted().then(() => loadAndRender()); });

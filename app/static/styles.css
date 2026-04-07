@@ -651,6 +651,46 @@ html, body {
     background: rgba(6, 182, 212, 0.26);
 }
 
+.flow-comments-row {
+    margin-top: 0.75rem;
+}
+
+.flow-comment-input-row {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    margin-top: 0.4rem;
+}
+
+.flow-comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.2rem;
+}
+
+.flow-comment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(15, 23, 42, 0.45);
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.flow-comment-delete {
+    border: none;
+    background: transparent;
+    color: #f87171;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
 /* Empty State */
 .flow-empty {
     text-align: center;
