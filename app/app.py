@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template
 import json
 import os
 import re
+import math
 from html import escape
 
 # Import version: when running as a script the package name may not be available,
@@ -109,6 +110,30 @@ def api_get_tasks():
         tasks = sorted(tasks, key=lambda x: x.get('due_date') or '')
     elif sort == 'created':
         tasks = sorted(tasks, key=lambda x: x.get('created_at') or 0)
+
+    has_pagination = 'page' in request.args or 'per_page' in request.args
+    if has_pagination:
+        try:
+            page = max(int(request.args.get('page', 1)), 1)
+        except Exception:
+            page = 1
+        try:
+            per_page = min(max(int(request.args.get('per_page', 10)), 1), 100)
+        except Exception:
+            per_page = 10
+
+        total = len(tasks)
+        pages = max(math.ceil(total / per_page), 1)
+        start = (page - 1) * per_page
+        end = start + per_page
+        return jsonify({
+            'items': tasks[start:end],
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'pages': pages,
+        })
+
     return jsonify(tasks)
 
 
