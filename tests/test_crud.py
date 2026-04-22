@@ -3,10 +3,9 @@ import sys
 
 import pytest
 
-# Ensure the app package directory is importable from repo root.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "app"))
 
-import app as app_module
+import app as app_module  # noqa: E402
 
 
 @pytest.fixture
@@ -48,7 +47,11 @@ def test_update_task(client):
     # Act
     update_resp = client.put(
         f"/api/tasks/{task_id}",
-        json={"name": "New title", "description": "Updated details", "priority": 2},
+        json={
+            "name": "New title",
+            "description": "Updated details",
+            "priority": 2,
+        },
     )
 
     # Assert
@@ -86,7 +89,10 @@ def test_tags_assign_filter_and_remove(client):
     create_resp = client.post("/api/tasks", json={"name": "Tagged task"})
     task_id = create_resp.get_json()[-1]["id"]
 
-    add_tag_resp = client.post(f"/api/tasks/{task_id}/tags", json={"tag": "Work"})
+    add_tag_resp = client.post(
+        f"/api/tasks/{task_id}/tags",
+        json={"tag": "Work"},
+    )
     assert add_tag_resp.status_code == 200
     assert "work" in add_tag_resp.get_json()["tags"]
 
@@ -102,7 +108,10 @@ def test_tags_assign_filter_and_remove(client):
 
 
 def test_comments_crud_and_sanitization(client):
-    create_resp = client.post("/api/tasks", json={"name": "Task with comments"})
+    create_resp = client.post(
+        "/api/tasks",
+        json={"name": "Task with comments"},
+    )
     task_id = create_resp.get_json()[-1]["id"]
 
     add_comment_resp = client.post(
@@ -119,7 +128,9 @@ def test_comments_crud_and_sanitization(client):
     assert len(comments) == 1
     assert comments[0]["id"] == comment["id"]
 
-    delete_comment_resp = client.delete(f"/api/tasks/{task_id}/comments/{comment['id']}")
+    delete_comment_resp = client.delete(
+        f"/api/tasks/{task_id}/comments/{comment['id']}"
+    )
     assert delete_comment_resp.status_code == 200
     assert delete_comment_resp.get_json() == []
 
