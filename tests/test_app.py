@@ -1,10 +1,9 @@
 import os
 import sys
 
-# Ensure the app package directory is importable from repo root.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "app"))
 
-import app as app_module
+import app as app_module  # noqa: E402
 
 
 def test_app_import():

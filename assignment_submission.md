@@ -1,118 +1,46 @@
-# GitHub Actions CI/CD Pipeline - Submission
+# To-Do Assignment Submission
 
-## Part A - CI Workflow
+## Branch Evidence
 
-### CI Workflow File
-
-```yaml
-name: CI
-
-on:
-  push:
-    branches: [main, dev]
-  pull_request:
-    branches: [main, dev]
-
-jobs:
-  lint-and-test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r app/requirements.txt
-          pip install pytest flake8
-
-      - name: Run lint
-        run: |
-          flake8 app tests scripts --exclude=.venv,__pycache__,app/.venv --count --select=E9,F63,F7,F82 --show-source --statistics
-
-      - name: Run tests
-        run: pytest tests -v
+```text
+* dev
+  feature/filters-sorting
+  feature/quick-actions
+  feature/search
+  feature/task-descriptions
+  main
+  wip/full-assignment-implementation
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/dev
+  remotes/origin/feat/ci-gate-proof
+  remotes/origin/feature/filters-sorting
+  remotes/origin/feature/pagination-and-performance
+  remotes/origin/feature/quick-actions
+  remotes/origin/feature/search
+  remotes/origin/feature/task-comments
+  remotes/origin/feature/task-descriptions
+  remotes/origin/feature/task-tags-labels
+  remotes/origin/main
 ```
 
-### Evidence
+## Feature PRs Merged Into `dev`
 
-- [ ] Screenshot: successful CI run (green check)
-- [ ] Screenshot: failed CI run (then fixed)
+- [PR #1](https://github.com/nv23086-abbas-alsaighal/to-do/pull/1) - feature/task-descriptions: adds description, priority, due date support, and UI/API plumbing.
+- [PR #2](https://github.com/nv23086-abbas-alsaighal/to-do/pull/2) - feature/search: adds search by title/description with the `q` query parameter and UI search support.
+- [PR #3](https://github.com/nv23086-abbas-alsaighal/to-do/pull/3) - feature/filters-sorting: adds filtering, sorting, and stats support for the task list.
 
-## Part B - CD Workflow
+## Release PR And Tag
 
-### CD Workflow File
+- [PR #9](https://github.com/nv23086-abbas-alsaighal/to-do/pull/9) - dev merged into main for the release.
+- [GitHub Release v0.1.0](https://github.com/nv23086-abbas-alsaighal/to-do/releases/tag/v0.1.0)
+- Release notes list the three shipped features: task metadata, search, and filters/sorting.
 
-```yaml
-name: CD
+## Container Verification
 
-on:
-  release:
-    types: [published]
+- Local build succeeded with `docker build -t todo-saas:0.1.0 .`.
+- The release is versioned as `0.1.0`, matching the semantic versioning requirement for the first feature release.
+- Registry push and screenshot evidence should be attached from the target DockerHub or ECR account used for submission.
 
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
+## What I Learned
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Extract version from release tag
-        id: version
-        run: |
-          TAG_NAME="${{ github.event.release.tag_name }}"
-          VERSION="${TAG_NAME#v}"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/to-do:${{ steps.version.outputs.version }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/to-do:latest
-```
-
-### Evidence
-
-- [ ] Screenshot: successful CD run
-- [ ] Screenshot: DockerHub/ECR image tag
-
-## Part C - End-to-End Flow
-
-### 3-5 Sentence Flow Description
-
-I made a small change on the dev branch and pushed it to GitHub. This triggered the CI workflow, which ran flake8 linting and pytest tests automatically and passed. I then opened a pull request from dev to main, merged it after CI succeeded, and created a new GitHub Release with a v-prefixed tag. Publishing the release triggered the CD workflow, which built the Docker image and pushed both the version tag and latest tag to DockerHub. Finally, I verified the new image tag in the container registry.
-
-### Evidence
-
-- [ ] Screenshot: GitHub Release page showing new version
-- [ ] Screenshot: Registry showing the pushed image tag
-
-## Reflection
-
-Using GitHub Actions made the project workflow more reliable and faster because testing and linting now run on every push and pull request. It also reduced manual errors in container publishing by tying Docker image builds to release events. The secrets system kept credentials safe and out of source control, which is critical for real projects. I also learned how important consistent tagging is, since release tags directly control image version tags in CD.
-
-## Secret Names Used
-
-- `DOCKERHUB_USERNAME`
-- `DOCKERHUB_TOKEN`
-
-No secret values are included in this document.
+Branching by feature kept each change focused and made review much easier because the search, metadata, and filtering work could be merged independently. The `dev` integration branch gave a safe place to combine features before promoting them to `main`, and the release tag tied the container image version directly to the Git history. Using a consistent SemVer release also made the Docker build and GitHub release process straightforward to verify.
